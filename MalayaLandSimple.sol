@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // CC0: No Rights Reserved and Public Domain
-// Created by Stanksy
+// A soulbound
+// Created by Dexter Bano Jr.
 /**
                          d8b                                d8b                           d8b 
                          88P                                88P                           88P 
@@ -21,15 +22,22 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "https://github.com/Brechtpd/base64/blob/main/base64.sol";
 
 contract Malayaglyphs is ERC721Enumerable, Ownable {
-  using Strings for uint256;
+    using Strings for uint256;
   
   string[] public traitsValues = ["We are all born free and equal.", "Do not discriminate.", "The right to life.", "No slavery.", "No torture.", "You have rights no matter where you go.", "We're all equal before the law.", "Your human rights are protected by law.", "No unfair detainment.", "The right to trial.", "We are always innocent till proven guilty.", "The right to privacy.", "Freedom to move.", "The right to seek a safe place to live.", "Right tp a nationality."];
   string[] public socialValues = ["Poverty and Homelessness", "Climate Change", "Overpopulation", "Immigration Stresses", "Civil Rights and Racial Discrimination", "Gender Inequality", "Health Care Availability", "Childhood Obesity", "Bullying"];
   string[] public sdgValues = ["No poverty", "Zero hunger", "Good health and well-being", "Quality education", "Gender equality", "Clean water and sanitation", "Affordable and clean energy", "Decent work and economic growth", "Industry, innovation and infrastructure", "Reduced inequalities", "Sustainable cities and communities", "Responsible consumption and production", "Climate action", "Life below water", "Life on land", "Peace, justice and strong institutions", "Partnerships for the goals"];
 
+  address public operator;
+
   bool public paused = false;
   bool public revealed = true;
-  uint256 public cost = 0.00001 ether;
+  uint256 public cost = 0.0001 ether;
+
+  event Burn(address _soul);
+  event Update(address _soul);
+  event SetProfile(address _profiler, address _soul);
+  event RemoveProfile(address _profiler, address _soul);
   
   // struct
    struct Traits { 
@@ -50,9 +58,19 @@ contract Malayaglyphs is ERC721Enumerable, Ownable {
        int8 y;
        int8 z;
    }
+
+   struct Soul {
+       string identity;
+       string url;
+       uint256 score;
+       uint256 timestamp;
+   }
    
    mapping (uint256 => Traits) public traits;
    Building[] public buildings;
+   mapping (address => Soul) private souls;
+   mapping (address => mapping (address => Soul)) soulProfiles;
+   mapping (address => address[]) private profiles;
   
   constructor() ERC721("MalayaLand", "||||") {
       buildings.push(Building("Zero", 0, 0, 0, 0, 0, 0));
@@ -72,18 +90,18 @@ contract Malayaglyphs is ERC721Enumerable, Ownable {
   // public
   function mint() public payable {
     uint256 supply = totalSupply();
-    require(supply + 1 <= 2000);
+    require(supply + 1 <= 10000);
     
     Traits memory newTraits = Traits(
-        string(abi.encodePacked('|||| #', uint256(supply + 1).toString())), 
-        "Onchain social commentary work and access to Kingdom of Malaya. Remember to think broadly.",
+        string(abi.encodePacked('|||| ', uint256(supply + 1).toString())), 
+        "Onchain soulbound society, identity, social commentary, and access to Kingdom of Malaya.",
         randomNum(361, block.timestamp, supply).toString(),
         traitsValues[randomNum(traitsValues.length, block.difficulty, supply)],
         socialValues[randomNum(socialValues.length, block.timestamp, supply)],
         sdgValues[randomNum(sdgValues.length, block.difficulty, supply)]);
     
     if (msg.sender != owner()) {
-      require(msg.value >= 0.00001 ether);
+      require(msg.value >= 0.0001 ether);
     }
 
     traits[supply + 1] = newTraits;
@@ -93,6 +111,36 @@ contract Malayaglyphs is ERC721Enumerable, Ownable {
   function randomNum(uint256 _mod, uint256 _seed, uint _salt) public view returns(uint256) {
       uint256 num = uint(keccak256(abi.encodePacked(block.timestamp, msg.sender, _seed, _salt))) % _mod;
       return num;
+  }
+
+  function burn(address _soul) external {
+      require(msg.sender == _soul, "Only users have rights to delete their data");
+      delete souls[_soul];
+      for (uint i=0; i<profiles[_soul].length; i++) {
+        address profiler = profiles[_soul][i];
+        delete soulProfiles[profiler][_soul];
+      }
+      emit Burn(_soul);
+  }
+
+  function update(address _soul, Soul memory _soulData) external {
+      require(msg.sender == operator, "Only landlords can update soul data");
+      souls[_soul] = _soulData;
+      emit Update(_soul);
+  }
+
+  function getProfile(address _profiler, address _soul) external view returns (Soul memory) {
+      return soulProfiles[_profiler][_soul];
+  }
+  
+  function listProfiles(address _soul) external view returns (address[] memory) {
+      return profiles[_soul];
+  }
+  
+  function removeProfile(address _profiler, address _soul) external {
+      require(msg.sender == _soul, "Only users have rights to delete their profile data");
+      delete soulProfiles[_profiler][msg.sender];
+      emit RemoveProfile(_profiler, _soul);
   }
   
   function buildImage(uint256 _tokenId) public view returns(string memory) {
