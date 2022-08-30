@@ -68,7 +68,7 @@ contract Malayaglyphs is ERC721Enumerable, Ownable {
    
    mapping (uint256 => Traits) public traits;
    Building[] public buildings;
-   mapping (address => Soul) private souls;
+   mapping (address => Soul) public souls;
    mapping (address => mapping (address => Soul)) soulProfiles;
    mapping (address => address[]) private profiles;
   
@@ -154,7 +154,7 @@ contract Malayaglyphs is ERC721Enumerable, Ownable {
       ));
   }
   
-  function buildMetadata(uint256 _tokenId) public view returns(string memory) {
+  function buildMetadata(uint256 _tokenId) public view returns (string memory) {
       Traits memory currentTraits = traits[_tokenId];
       return string(abi.encodePacked(
               'data:application/json;base64,', Base64.encode(bytes(abi.encodePacked(
@@ -177,7 +177,7 @@ contract Malayaglyphs is ERC721Enumerable, Ownable {
   }
 
   function tokenURI(uint256 _tokenId) public view virtual override returns (string memory) {
-      require(_exists(_tokenId),"ERC721Metadata: URI query for nonexistent token");
+      require(_exists(_tokenId), "||||: URI query for nonexistent token");
       return buildMetadata(_tokenId);
   }
 
